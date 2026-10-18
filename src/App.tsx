@@ -189,6 +189,7 @@ function App() {
 
     setIsImporting(true)
     setError('')
+    setToast('')
     const nextSources = [...sources]
     const existingNames = new Set(tables.map((table) => table.name))
     const failures: string[] = []
@@ -544,16 +545,18 @@ function App() {
         type="file"
       />
 
-      {isImporting && (
-        <div className="toast processing-toast">
-          <LoaderCircle className="spin" size={15} />
-          Inspecting data locally…
-        </div>
-      )}
-      {toast && (
-        <div className="toast">
-          <Check size={15} />
-          {toast}
+      {(isImporting || toast) && (
+        <div
+          aria-live="polite"
+          className={`toast ${isImporting ? 'processing-toast' : ''}`}
+          role="status"
+        >
+          {isImporting ? (
+            <LoaderCircle className="spin" size={15} />
+          ) : (
+            <Check size={15} />
+          )}
+          {isImporting ? 'Inspecting data locally…' : toast}
         </div>
       )}
 

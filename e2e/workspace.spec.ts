@@ -67,12 +67,32 @@ test('imports and removes a CSV without a server', async ({ page }) => {
   await expect(page.locator('.data-table thead')).toContainText('conversion_rate')
   await expect(page.locator('.data-table tbody tr')).toHaveCount(12)
 
+  await page.locator('input[type="file"]').setInputFiles(
+    path.resolve('public/sample-campaign.csv'),
+  )
+  await expect(page.locator('.source-row')).toHaveCount(5)
+
   await page.reload()
+  await expect(page.locator('.source-row')).toHaveCount(5)
+
+  const importedRow = page
+    .locator('.source-row')
+    .filter({ has: page.getByText('sample_campaign', { exact: true }) })
+  await importedRow.hover()
+  await page
+    .getByRole('button', { name: 'Remove sample_campaign', exact: true })
+    .click()
+  await page.getByRole('button', { name: 'Remove source' }).click()
+
   await expect(page.locator('.source-row')).toHaveCount(4)
 
-  const importedRow = page.locator('.source-row').filter({ hasText: 'sample_campaign' })
-  await importedRow.hover()
-  await page.getByRole('button', { name: 'Remove sample_campaign' }).click()
+  const duplicateRow = page
+    .locator('.source-row')
+    .filter({ has: page.getByText('sample_campaign_2', { exact: true }) })
+  await duplicateRow.hover()
+  await page
+    .getByRole('button', { name: 'Remove sample_campaign_2', exact: true })
+    .click()
   await page.getByRole('button', { name: 'Remove source' }).click()
 
   await expect(page.locator('.source-row')).toHaveCount(3)

@@ -1539,6 +1539,46 @@ input:focus-visible {
   white-space: pre-wrap;
 }
 
+.boundary-details {
+  width: min(520px, 100%);
+  margin: 0 0 18px;
+  color: var(--muted);
+  font-size: 9px;
+  text-align: left;
+}
+
+.boundary-details summary {
+  width: max-content;
+  margin: 0 auto 8px;
+  cursor: pointer;
+}
+
+.boundary-details code {
+  display: block;
+  max-height: 110px;
+  padding: 10px;
+  overflow: auto;
+  color: #753b36;
+  font-family: var(--font-mono);
+  line-height: 1.5;
+  background: var(--red-soft);
+  border: 1px solid #efd2cd;
+  border-radius: 6px;
+}
+
+.boundary-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.boundary-actions button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: center;
+}
+
 .spin {
   animation: spin 0.9s linear infinite;
 }
