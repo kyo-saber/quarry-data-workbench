@@ -4,6 +4,11 @@
   "version": "0.1.0",
   "packageManager": "pnpm@11.25.0",
   "type": "module",
+  "homepage": "https://kyo-saber.github.io/quarry-data-workbench/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kyo-saber/quarry-data-workbench.git"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

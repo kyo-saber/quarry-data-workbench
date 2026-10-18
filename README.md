@@ -4,6 +4,11 @@
 
 Quarry turns raw files into queryable tables, charts, and exportable results without sending the data to a backend. DuckDB WebAssembly runs the SQL engine directly in the browser, while React handles the editing and analysis experience.
 
+[Live demo](https://kyo-saber.github.io/quarry-data-workbench/) · [Architecture](#architecture) · [Run locally](#run-locally)
+
+[![CI](https://github.com/kyo-saber/quarry-data-workbench/actions/workflows/ci.yml/badge.svg)](https://github.com/kyo-saber/quarry-data-workbench/actions/workflows/ci.yml)
+[![Deploy to GitHub Pages](https://github.com/kyo-saber/quarry-data-workbench/actions/workflows/deploy-pages.yml/badge.svg)](https://github.com/kyo-saber/quarry-data-workbench/actions/workflows/deploy-pages.yml)
+
 ![Quarry desktop workspace](docs/quarry-desktop.png)
 
 ## Why Quarry
