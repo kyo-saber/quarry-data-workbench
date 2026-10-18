@@ -62,7 +62,7 @@ The app bundles its fonts and DuckDB WebAssembly engines with the static build. 
 
 ## Stack
 
-- React 19 and TypeScript
+- React 19 and TypeScript with self-hosted Inter typography
 - Vite
 - DuckDB WebAssembly and Apache Arrow
 - CodeMirror 6 for SQL editing
