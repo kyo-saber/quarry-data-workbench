@@ -25,6 +25,7 @@ test('edits and runs SQL with the keyboard shortcut', async ({ page }) => {
 
   await expect(page.locator('.data-table thead')).toContainText('answer')
   await expect(page.locator('.data-table tbody tr').first()).toContainText('42')
+  await expect(page.getByRole('status')).toContainText('Query returned 1 row')
 
   await editor.click()
   await page.keyboard.press('Control+A')
@@ -33,6 +34,32 @@ test('edits and runs SQL with the keyboard shortcut', async ({ page }) => {
 
   await expect(page.getByText('Query failed')).toBeVisible()
   await expect(page.locator('.query-error')).toContainText('missing_table')
+})
+
+test('builds and runs an analytical query without writing SQL', async ({ page }) => {
+  await page.goto('/')
+  await expect(page.locator('.data-table tbody tr')).toHaveCount(12)
+
+  await page.getByRole('tab', { name: 'Visual' }).click()
+  await expect(page.getByLabel('Builder table')).toHaveValue('orders')
+  await expect(page.getByLabel('Group by column').locator('option')).toHaveCount(8)
+
+  await page.getByLabel('Group by column').selectOption('channel')
+  await page.getByLabel('Aggregation').selectOption('count')
+  await page.getByLabel('Filter column').selectOption('status')
+  await page.getByLabel('Filter value').fill('completed')
+
+  await expect(page.locator('.builder-sql-preview code')).toContainText('GROUP BY "channel"')
+  await page.getByRole('button', { name: 'Run query' }).click()
+
+  await expect(page.locator('.data-table thead')).toContainText('channel')
+  await expect(page.locator('.data-table thead')).toContainText('rows')
+  await expect(page.locator('.data-table tbody tr')).toHaveCount(4)
+  await expect(page.getByRole('status')).toContainText('Query returned 4 rows')
+
+  await page.getByRole('button', { name: 'Edit as SQL' }).click()
+  await expect(page.locator('.cm-content')).toContainText('WHERE "status" = \'completed\'')
+  await expect(page.locator('.cm-content')).toContainText('GROUP BY "channel"')
 })
 
 test('runs a saved query and saves the current SQL', async ({ page }) => {
@@ -111,6 +138,15 @@ test('keeps the mobile workbench within the viewport', async ({ page }) => {
 
   await page.getByRole('button', { name: /Results/ }).click()
   await expect(page.locator('.table-pane')).toBeVisible()
+
+  await page.getByRole('tab', { name: 'Visual' }).click()
+  await expect(page.locator('.visual-builder')).toBeVisible()
+
+  const builderDimensions = await page.evaluate(() => ({
+    body: document.body.scrollWidth,
+    viewport: window.innerWidth,
+  }))
+  expect(builderDimensions.body).toBeLessThanOrEqual(builderDimensions.viewport)
 
   await page.getByRole('button', { name: 'Open navigation' }).click()
   await expect(page.locator('.sidebar')).toHaveClass(/open/)

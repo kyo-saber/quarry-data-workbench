@@ -108,6 +108,25 @@ export class QueryEngine {
     })
   }
 
+  async getColumns(tableName: string): Promise<QueryColumn[]> {
+    const result = await this.connection.query(
+      `SELECT column_name, data_type
+       FROM information_schema.columns
+       WHERE table_schema = 'main'
+         AND table_name = ${quoteSqlString(tableName)}
+       ORDER BY ordinal_position`,
+    )
+
+    return result.toArray().map((row) => {
+      const rawType = String(row.data_type)
+      return {
+        name: String(row.column_name),
+        rawType,
+        kind: inferColumnKind(rawType),
+      }
+    })
+  }
+
   async importSource(source: ImportedSource): Promise<void> {
     const fileType = detectFileType(source.fileName)
     if (!fileType) throw new Error('Only CSV, TSV, JSON, JSONL, and NDJSON files are supported.')

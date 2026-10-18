@@ -21,6 +21,8 @@ It is also a focused demonstration of browser-native data engineering:
 - CSV, TSV, JSON, JSONL, and NDJSON files are imported locally.
 - Imported files and saved queries persist in IndexedDB.
 - Arrow values are normalized for decimal, timestamp, bigint, and null edge cases.
+- A visual query builder covers tables, grouping, aggregations, filters, sorting, and limits.
+- Generated SQL remains visible and can be opened in the full SQL editor at any time.
 - Results can be inspected as a table, explored as an auto-inferred chart, or exported to CSV.
 - The app includes a working sample warehouse and mobile layout, not just a landing page.
 
@@ -31,6 +33,10 @@ The starter workspace contains a small commerce dataset with `orders`, `products
 You can also import the included [`public/sample-campaign.csv`](public/sample-campaign.csv) or any file you own. After import, Quarry creates a table, previews its rows, and refreshes the source list.
 
 ![Quarry mobile workspace](docs/quarry-mobile.png)
+
+The visual mode gives non-SQL users a complete first path through the product. Every control maps to a generated SQL query, which can be inspected and edited in SQL mode.
+
+![Quarry visual query builder](docs/quarry-visual-builder.png)
 
 ## Architecture
 
@@ -95,6 +101,8 @@ On Windows, the local Playwright configuration uses Microsoft Edge. CI installs 
 **Persistence without detached buffers.** DuckDB transfers registered file buffers to its worker. Quarry passes a copy when importing so the original bytes remain available for IndexedDB persistence and page reloads.
 
 **Responsive desktop workspace.** The desktop view shows the table and visual side by side. Below 900px, the sidebar becomes a drawer and the result pane exposes table and visual tabs. Playwright checks for viewport overflow at 390px.
+
+**Progressive query authoring.** The visual builder and SQL editor share the same generated query state. Users can start with table, field, aggregation, and filter controls, then switch into SQL without losing their work.
 
 **Small deterministic core.** SQL naming, CSV serialization, chart inference, and formatting are pure functions with unit coverage. Browser interactions, local persistence, imports, saved queries, and mobile layout are covered by end-to-end tests.
 

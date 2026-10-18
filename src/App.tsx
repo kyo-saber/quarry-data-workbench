@@ -3,6 +3,7 @@ import {
   BookmarkPlus,
   ChartNoAxesCombined,
   Check,
+  Code2,
   Copy,
   Database,
   DatabaseZap,
@@ -10,6 +11,7 @@ import {
   HelpCircle,
   LoaderCircle,
   LockKeyhole,
+  ListFilter,
   Menu,
   Play,
   Plus,
@@ -18,13 +20,14 @@ import {
   ShieldCheck,
   TableProperties,
 } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ChangeEvent } from 'react'
 import { DataTable } from './components/DataTable'
 import { Dialog } from './components/Dialog'
 import { InsightChart } from './components/InsightChart'
 import { QueryEditor } from './components/QueryEditor'
 import { Sidebar } from './components/Sidebar'
+import { VisualQueryBuilder } from './components/VisualQueryBuilder'
 import { DEFAULT_QUERY, STARTER_QUERIES } from './data/starter'
 import { getQueryEngine, type QueryEngine } from './lib/duckdb'
 import { downloadText, formatDuration, resultToCsv } from './lib/format'
@@ -38,12 +41,14 @@ import {
 } from './lib/storage'
 import type {
   ImportedSource,
+  QueryColumn,
   QueryResult,
   SavedQuery,
   TableInfo,
 } from './types'
 
 type MobileView = 'table' | 'chart'
+type EditorMode = 'visual' | 'sql'
 
 function getSuggestedQueryName(sql: string): string {
   const firstComment = sql.match(/^\s*--\s*(.+)$/m)?.[1]?.trim()
@@ -82,6 +87,7 @@ function App() {
   const [savedQueries, setSavedQueries] = useState<SavedQuery[]>(STARTER_QUERIES)
   const [activeQueryId, setActiveQueryId] = useState<string | null>('starter-revenue')
   const [sql, setSql] = useState(DEFAULT_QUERY)
+  const [editorMode, setEditorMode] = useState<EditorMode>('sql')
   const [result, setResult] = useState<QueryResult | null>(null)
   const [error, setError] = useState('')
   const [isRunning, setIsRunning] = useState(false)
@@ -96,6 +102,12 @@ function App() {
   const [deleteTarget, setDeleteTarget] = useState<TableInfo | null>(null)
   const isMac = /Mac|iPhone|iPad/.test(navigator.platform)
   const runShortcut = isMac ? '⌘↵' : 'Ctrl↵'
+
+  const loadTableColumns = useCallback(async (tableName: string): Promise<QueryColumn[]> => {
+    const engine = engineRef.current
+    if (!engine) return []
+    return engine.getColumns(tableName)
+  }, [])
 
   useEffect(() => {
     if (bootstrapStarted.current) return
@@ -161,6 +173,13 @@ function App() {
     try {
       const nextResult = await engine.run(queryText)
       setResult(nextResult)
+      setToast(
+        nextResult.rowCount > 0
+          ? `Query returned ${nextResult.rowCount.toLocaleString()} row${
+              nextResult.rowCount === 1 ? '' : 's'
+            } in ${formatDuration(nextResult.elapsedMs)}`
+          : `Query completed with no rows in ${formatDuration(nextResult.elapsedMs)}`,
+      )
     } catch (queryFailure) {
       setError(getErrorMessage(queryFailure))
     } finally {
@@ -231,6 +250,7 @@ function App() {
       if (firstImportedTable) {
         const previewSql = `SELECT *\nFROM "${firstImportedTable}"\nLIMIT 100`
         setSql(previewSql)
+        setEditorMode('sql')
         setActiveQueryId(null)
         setMobileView('table')
         await runQuery(previewSql)
@@ -251,6 +271,7 @@ function App() {
   const handleOpenTable = (table: TableInfo) => {
     const nextSql = `SELECT *\nFROM "${table.name}"\nLIMIT 100`
     setSql(nextSql)
+    setEditorMode('sql')
     setActiveQueryId(null)
     setMobileView('table')
     setSidebarOpen(false)
@@ -259,6 +280,7 @@ function App() {
 
   const handleOpenSavedQuery = (query: SavedQuery) => {
     setSql(query.sql)
+    setEditorMode('sql')
     setActiveQueryId(query.id)
     setMobileView('chart')
     setSidebarOpen(false)
@@ -267,14 +289,20 @@ function App() {
 
   const handleNewQuery = () => {
     setSql('')
+    setEditorMode('sql')
     setActiveQueryId(null)
     setError('')
     setSidebarOpen(false)
   }
 
   const handleSaveDialog = () => {
-    setSaveName(getSuggestedQueryName(sql))
+    setSaveName(editorMode === 'visual' ? 'Visual summary' : getSuggestedQueryName(sql))
     setSaveDialogOpen(true)
+  }
+
+  const handleEditorModeChange = (mode: EditorMode) => {
+    setEditorMode(mode)
+    setActiveQueryId(null)
   }
 
   const handleSaveQuery = async () => {
@@ -419,9 +447,28 @@ function App() {
                 <span className="query-live-dot" />
                 <strong>
                   {savedQueries.find((query) => query.id === activeQueryId)?.name ??
-                    'Ad hoc query'}
+                    (editorMode === 'visual' ? 'Visual query' : 'Ad hoc query')}
                 </strong>
-                <span className="query-kind">SQL</span>
+                <div aria-label="Query editor mode" className="editor-mode-switch" role="tablist">
+                  <button
+                    aria-selected={editorMode === 'visual'}
+                    onClick={() => handleEditorModeChange('visual')}
+                    role="tab"
+                    type="button"
+                  >
+                    <ListFilter size={12} />
+                    Visual
+                  </button>
+                  <button
+                    aria-selected={editorMode === 'sql'}
+                    onClick={() => handleEditorModeChange('sql')}
+                    role="tab"
+                    type="button"
+                  >
+                    <Code2 size={12} />
+                    SQL
+                  </button>
+                </div>
               </div>
               <div className="query-actions">
                 <button className="toolbar-button" onClick={handleCopySql} type="button">
@@ -454,12 +501,26 @@ function App() {
               </div>
             </div>
 
-            <QueryEditor onChange={setSql} onRun={() => void runQuery()} value={sql} />
+            {editorMode === 'sql' ? (
+              <QueryEditor onChange={setSql} onRun={() => void runQuery()} value={sql} />
+            ) : (
+              <VisualQueryBuilder
+                isRunning={isRunning}
+                onEditSql={() => handleEditorModeChange('sql')}
+                onLoadColumns={loadTableColumns}
+                onQueryChange={setSql}
+                onRun={(nextSql) => {
+                  setSql(nextSql)
+                  void runQuery(nextSql)
+                }}
+                tables={tables}
+              />
+            )}
 
             <div className="query-footer">
               <div className="engine-state">
                 <Database size={13} />
-                DuckDB WASM
+                {editorMode === 'visual' ? 'Visual builder' : 'DuckDB WASM'}
                 <span>·</span>
                 <span>Preview capped at 500 rows</span>
               </div>
